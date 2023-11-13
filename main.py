@@ -15,7 +15,7 @@ rho_f = 1000  # kg/m^3
 
 # Solver settings
 t_0 = 0  # s
-t_max = 0.1  # s
+t_max = 0.4  # s
 dt = 0.001  # s
 
 U_f = 0  # m/s
@@ -76,13 +76,25 @@ F_P[-1] = F_P[-2]
 F_H[-1] = F_H[-2]
 F_A[-1] = F_A[-2]
 
+# Fetch reference data
+with open('ref/data_task1a.txt') as f:
+    lines = f.readlines()
+    t_ref = []
+    v_ref = []
+    for line in lines[1:]:
+        lineEdited = line.replace('\n', '')
+        lineSplit = lineEdited.split('\t')
+        t_ref.append(float(lineSplit[0]))
+        v_ref.append(-float(lineSplit[1]))
+
 # Display and save results
 figureDPI = 200
 fig, ax = plt.subplots()
-ax.plot(t * 1e3, V, '-b', label='Y Velocity')
+ax.plot(t * 1e3, V, '-b', label='Y velocity')
+ax.plot(t_ref, v_ref, '--r', label='Reference velocity')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Velocity [m/s]')
-ax.set_title(f'Velocity distribution in time, dt = {dt:.3g} s.')
+ax.set_title(f'Velocity distribution in time, dt = {dt * 1e3:.3g} ms.')
 ax.grid()
 ax.legend()
 fig.set_size_inches(8, 6)
@@ -93,7 +105,7 @@ ax.plot(t * 1e3, Re_p, '-b', label='Re_p')
 # ax.hlines(Re_p_max, t[0], t[-1], colors='r', linestyles='--', label='Stokes regime')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Re_p [-]')
-ax.set_title(f'Particle reynolds number distribution in time, dt = {dt:.3g} s.')
+ax.set_title(f'Particle reynolds number distribution in time, dt = {dt * 1e3:.3g} ms.')
 ax.grid()
 ax.legend()
 fig.set_size_inches(8, 6)
@@ -107,7 +119,7 @@ ax.plot(t * 1e3, F_P / np.abs(F_g), '-g', label='Pressure gradient cont.')
 ax.plot(t * 1e3, F_H / np.abs(F_g), '-y', label='History cont.')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('F_x / |F_g| [-]')
-ax.set_title(f'Normalized force distribution in time, dt = {dt:.3g} s.')
+ax.set_title(f'Normalized force distribution in time, dt = {dt * 1e3:.3g} ms.')
 ax.grid()
 ax.legend(loc='lower left')
 fig.set_size_inches(8, 6)
