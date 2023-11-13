@@ -15,7 +15,7 @@ rho_f = 1000  # kg/m^3
 
 # Solver settings
 t_0 = 0  # s
-t_max = 2  # s
+t_max = 1  # s
 dt = 0.01  # s
 
 U_f = 0  # m/s
@@ -49,3 +49,21 @@ for i in range(1, N_steps):
     # Calculate reynolds number to ensure stokes flow
     Re_p[i] = rho_f * np.abs(U_f - V[i]) * d_p / mu_f
 
+# Display and save results
+_, ax = plt.subplots()
+ax.plot(t, V, '-b', label='Y Velocity')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Velocity [m/s]')
+ax.set_title(f'Velocity distribution in time, dt = {dt:.3g} s.')
+ax.grid()
+ax.legend()
+
+_, ax = plt.subplots()
+ax.plot(t, Re_p, '-b', label='Re_p')
+ax.set_xlabel('Time [s]')
+ax.set_ylabel('Re_p [-]')
+ax.set_title(f'Particle reynolds number distribution in time, dt = {dt:.3g} s.')
+ax.grid()
+ax.legend()
+
+plt.show()
