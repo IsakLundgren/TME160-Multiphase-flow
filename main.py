@@ -17,7 +17,7 @@ rho_f = 1000  # kg/m^3
 t_0 = 0  # s
 t_max = 0.4  # s
 delta_t = 0.001  # s
-delta_t_repeat = 0.005  # s
+delta_t_repeat = 0.01  # s
 
 U_f = 0  # m/s
 V_0 = 0  # m/s
