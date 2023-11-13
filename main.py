@@ -16,7 +16,8 @@ rho_f = 1000  # kg/m^3
 # Solver settings
 t_0 = 0  # s
 t_max = 0.4  # s
-dt = 0.001  # s
+delta_t = 0.001  # s
+delta_t_repeat = 0.005  # s
 
 U_f = 0  # m/s
 V_0 = 0  # m/s
@@ -24,7 +25,7 @@ g = 9.82  # m/s^2
 
 
 # Solver quantity function
-def getQuantities(time, v, N_steps):
+def getQuantities(dt, time, v, N_steps):
     reynolds = rho_f * np.abs(U_f - v) * d_p / mu_f
 
     if reynolds == 0:
@@ -43,7 +44,7 @@ def getQuantities(time, v, N_steps):
 
 
 # Solve function
-def solve(schemeOrder=1):
+def solve(dt, schemeOrder=1):
     # Initialize quantities
     N_steps = int((t_max - t_0) / dt)
     t = t_0 * np.ones(N_steps)
@@ -64,7 +65,7 @@ def solve(schemeOrder=1):
         # Explicit solver, calculating from previous timestep
         for i in range(1, N_steps):
             # Caluclate forces on the particle
-            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(t[i-1], V[i-1], N_steps)
+            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(dt, t[i-1], V[i-1], N_steps)
 
             F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
 
@@ -76,14 +77,14 @@ def solve(schemeOrder=1):
         # Improved Eulers method, explicit
         for i in range(1, N_steps):
             # Caluclate forces on the particle
-            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(t[i-1], V[i-1], N_steps)
+            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(dt, t[i-1], V[i-1], N_steps)
             F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
 
             # Do pseudo timestep
             t[i] = t[i-1] + dt
 
             V_tilde = V[i-1] + dt * F_tot[i-1] / m_tot
-            Re_p_tilde, C_D_tilde, F_D_tilde, F_g_tilde, F_P_tilde, F_H_tilde = getQuantities(t[i-1], V_tilde, N_steps)
+            Re_p_tilde, C_D_tilde, F_D_tilde, F_g_tilde, F_P_tilde, F_H_tilde = getQuantities(dt, t[i-1], V_tilde, N_steps)
             F_tot_tilde = F_D_tilde + F_g_tilde + F_P_tilde + F_H_tilde
 
             # Do real timestep
@@ -107,8 +108,7 @@ def solve(schemeOrder=1):
 
 
 # Run solver
-t_e1, V_e1, Re_p_e1, C_D_e1, F_D_e1, F_g_e1, F_P_e1, F_H_e1, F_A_e1 = solve(1)
-t_e2, V_e2, Re_p_e2, C_D_e2, F_D_e2, F_g_e2, F_P_e2, F_H_e2, F_A_e2 = solve(2)
+t_e1, V_e1, Re_p_e1, C_D_e1, F_D_e1, F_g_e1, F_P_e1, F_H_e1, F_A_e1 = solve(delta_t, 1)
 
 # Fetch reference data
 with open('ref/data_task1a.txt') as f:
@@ -124,12 +124,11 @@ with open('ref/data_task1a.txt') as f:
 # Display and save results
 figureDPI = 200
 fig, ax = plt.subplots()
-ax.plot(t_e1 * 1e3, V_e1, '-b', label='Y velocity (1st order explicit)')
-ax.plot(t_e2 * 1e3, V_e2, '-g', label='Y velocity (2nd order explicit)')
+ax.plot(t_e1 * 1e3, V_e1, '-b', label='Y velocity')
 ax.plot(t_ref, v_ref, '--r', label='Reference velocity')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Velocity [m/s]')
-ax.set_title(f'Velocity distribution in time, dt = {dt * 1e3:.3g} ms.')
+ax.set_title(f'Velocity distribution in time, dt = {delta_t * 1e3:.3g} ms.')
 ax.grid()
 ax.legend()
 fig.set_size_inches(8, 6)
@@ -140,7 +139,7 @@ ax.plot(t_e1 * 1e3, Re_p_e1, '-b', label='Re_p')
 # ax.hlines(Re_p_max, t[0], t[-1], colors='r', linestyles='--', label='Stokes regime')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Re_p [-]')
-ax.set_title(f'Particle reynolds number distribution in time, dt = {dt * 1e3:.3g} ms.')
+ax.set_title(f'Particle reynolds number distribution in time, dt = {delta_t * 1e3:.3g} ms.')
 ax.grid()
 ax.legend()
 fig.set_size_inches(8, 6)
@@ -154,10 +153,27 @@ ax.plot(t_e1 * 1e3, F_P_e1 / np.abs(F_g_e1), '-g', label='Pressure gradient cont
 ax.plot(t_e1 * 1e3, F_H_e1 / np.abs(F_g_e1), '-y', label='History cont.')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('F_x / |F_g| [-]')
-ax.set_title(f'Normalized force distribution in time, dt = {dt * 1e3:.3g} ms.')
+ax.set_title(f'Normalized force distribution in time, dt = {delta_t * 1e3:.3g} ms.')
 ax.grid()
 ax.legend(loc='lower left')
 fig.set_size_inches(8, 6)
 fig.savefig('img/NormForce.png', dpi=figureDPI)
+
+# Run new scheme
+t_e1, V_e1, Re_p_e1, C_D_e1, F_D_e1, F_g_e1, F_P_e1, F_H_e1, F_A_e1 = solve(delta_t_repeat, 1)
+t_e2, V_e2, Re_p_e2, C_D_e2, F_D_e2, F_g_e2, F_P_e2, F_H_e2, F_A_e2 = solve(delta_t_repeat, 2)
+
+fig, ax = plt.subplots()
+ax.plot(t_e1 * 1e3, V_e1, '-b', label='Euler\'s method')
+ax.plot(t_e2 * 1e3, V_e2, '-g', label='Improved Euler\'s method')
+ax.plot(t_ref, v_ref, '--r', label='Reference velocity')
+ax.set_xlabel('Time [ms]')
+ax.set_ylabel('Velocity [m/s]')
+ax.set_title(f'Velocity distribution in time, dt = {delta_t_repeat * 1e3:.3g} ms.')
+ax.set_xlim(0, 100)
+ax.grid()
+ax.legend()
+fig.set_size_inches(8, 6)
+fig.savefig('img/SchemeComparison.png', dpi=figureDPI)
 
 plt.show()
