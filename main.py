@@ -22,8 +22,6 @@ U_f = 0  # m/s
 V_0 = 0  # m/s
 g = 9.82  # m/s^2
 
-schemeOrder = 1
-
 
 # Solver quantity function
 def getQuantities(time, v, N_steps):
@@ -45,7 +43,7 @@ def getQuantities(time, v, N_steps):
 
 
 # Solve function
-def solve(sO=1):
+def solve(schemeOrder=1):
     # Initialize quantities
     N_steps = int((t_max - t_0) / dt)
     t = t_0 * np.ones(N_steps)
@@ -58,6 +56,10 @@ def solve(sO=1):
     F_H = np.zeros(N_steps)
     F_tot = np.zeros(N_steps)
 
+    # Since there's no fluid movement, calculate added mass as a simple addition to particle mass
+    m_added = 1 / 2 * m_p * rho_f / rho_p
+    m_tot = m_p + m_added
+
     if schemeOrder == 1:
         # Explicit solver, calculating from previous timestep
         for i in range(1, N_steps):
@@ -66,17 +68,26 @@ def solve(sO=1):
 
             F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
 
-            # Since there's no fluid movement, calculate added mass as a simple addition to particle mass
-            m_added = 1 / 2 * m_p * rho_f / rho_p
-            m_tot = m_p + m_added
-
             # Do timestep
             t[i] = t[i-1] + dt
             V[i] = V[i-1] + dt * F_tot[i-1] / m_tot
 
     elif schemeOrder == 2:
-        # Improved Eulers method
-        a = 10
+        # Improved Eulers method, explicit
+        for i in range(1, N_steps):
+            # Caluclate forces on the particle
+            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(t[i-1], V[i-1], N_steps)
+            F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
+
+            # Do pseudo timestep
+            t[i] = t[i-1] + dt
+
+            V_tilde = V[i-1] + dt * F_tot[i-1] / m_tot
+            Re_p_tilde, C_D_tilde, F_D_tilde, F_g_tilde, F_P_tilde, F_H_tilde = getQuantities(t[i-1], V_tilde, N_steps)
+            F_tot_tilde = F_D_tilde + F_g_tilde + F_P_tilde + F_H_tilde
+
+            # Do real timestep
+            V[i] = V[i-1] + dt / 2 * (F_tot[i-1] + F_tot_tilde) / m_tot
 
     # Post-process the added mass force
     F_A = np.zeros(N_steps)
@@ -97,6 +108,7 @@ def solve(sO=1):
 
 # Run solver
 t_e1, V_e1, Re_p_e1, C_D_e1, F_D_e1, F_g_e1, F_P_e1, F_H_e1, F_A_e1 = solve(1)
+t_e2, V_e2, Re_p_e2, C_D_e2, F_D_e2, F_g_e2, F_P_e2, F_H_e2, F_A_e2 = solve(2)
 
 # Fetch reference data
 with open('ref/data_task1a.txt') as f:
@@ -112,7 +124,8 @@ with open('ref/data_task1a.txt') as f:
 # Display and save results
 figureDPI = 200
 fig, ax = plt.subplots()
-ax.plot(t_e1 * 1e3, V_e1, '-b', label='Y velocity')
+ax.plot(t_e1 * 1e3, V_e1, '-b', label='Y velocity (1st order explicit)')
+ax.plot(t_e2 * 1e3, V_e2, '-g', label='Y velocity (2nd order explicit)')
 ax.plot(t_ref, v_ref, '--r', label='Reference velocity')
 ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Velocity [m/s]')
