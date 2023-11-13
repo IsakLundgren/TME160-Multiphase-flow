@@ -49,7 +49,7 @@ for i in range(1, N_steps):
     # Caluclate forces on the particle
     F_D[i-1] = 1 / 2 * rho_f * d_p ** 2 * np.pi / 4 * C_D[i-1] * np.abs(U_f - V[i-1]) * (U_f - V[i-1])  # N Drag force
     F_g[i-1] = -m_p * g  # N Gravitational force
-    F_P[i-1] = -m_p * rho_f / rho_p * g  # N Pressure gradient force
+    F_P[i-1] = m_p * rho_f / rho_p * g  # N Pressure gradient force
     F_H[i-1] = m_p * (V[i-1] - V[0]) / np.sqrt(0.5 * (t_0 + dt * N_steps))
     F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
 
@@ -79,8 +79,8 @@ F_A[-1] = F_A[-2]
 # Display and save results
 figureDPI = 200
 fig, ax = plt.subplots()
-ax.plot(t, V, '-b', label='Y Velocity')
-ax.set_xlabel('Time [s]')
+ax.plot(t * 1e3, V, '-b', label='Y Velocity')
+ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Velocity [m/s]')
 ax.set_title(f'Velocity distribution in time, dt = {dt:.3g} s.')
 ax.grid()
@@ -89,9 +89,9 @@ fig.set_size_inches(8, 6)
 fig.savefig('img/VelocityDistribution.png', dpi=figureDPI)
 
 fig, ax = plt.subplots()
-ax.plot(t, Re_p, '-b', label='Re_p')
+ax.plot(t * 1e3, Re_p, '-b', label='Re_p')
 # ax.hlines(Re_p_max, t[0], t[-1], colors='r', linestyles='--', label='Stokes regime')
-ax.set_xlabel('Time [s]')
+ax.set_xlabel('Time [ms]')
 ax.set_ylabel('Re_p [-]')
 ax.set_title(f'Particle reynolds number distribution in time, dt = {dt:.3g} s.')
 ax.grid()
@@ -100,12 +100,12 @@ fig.set_size_inches(8, 6)
 fig.savefig('img/ReynoldsNo.png', dpi=figureDPI)
 
 fig, ax = plt.subplots()
-ax.plot(t, F_g / np.abs(F_g), '-b', label='Gravity cont.')
-ax.plot(t, F_D / np.abs(F_g), '-r', label='Drag cont.')
-ax.plot(t, F_A / np.abs(F_g), '-m', label='Added mass cont.')
-ax.plot(t, F_P / np.abs(F_g), '-g', label='Pressure gradient cont.')
-ax.plot(t, F_H / np.abs(F_g), '-y', label='History cont.')
-ax.set_xlabel('Time [s]')
+ax.plot(t * 1e3, F_g / np.abs(F_g), '-b', label='Gravity cont.')
+ax.plot(t * 1e3, F_D / np.abs(F_g), '-r', label='Drag cont.')
+ax.plot(t * 1e3, F_A / np.abs(F_g), '-m', label='Added mass cont.')
+ax.plot(t * 1e3, F_P / np.abs(F_g), '-g', label='Pressure gradient cont.')
+ax.plot(t * 1e3, F_H / np.abs(F_g), '-y', label='History cont.')
+ax.set_xlabel('Time [ms]')
 ax.set_ylabel('F_x / |F_g| [-]')
 ax.set_title(f'Normalized force distribution in time, dt = {dt:.3g} s.')
 ax.grid()
