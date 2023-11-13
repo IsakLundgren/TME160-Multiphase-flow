@@ -64,22 +64,31 @@ for i in range(1, N_steps):
     # Calculate reynolds number to ensure stokes flow
     Re_p[i] = rho_f * np.abs(U_f - V[i]) * d_p / mu_f
 
+# Post-process the added mass force
+F_A = np.zeros(N_steps)
+for i in range(1, N_steps):
+    F_A[i-1] = 1 / 2 * m_p * rho_f / rho_p * (V[i-1] - V[i]) / dt
+
 # Assume equalized forces and copy over the last values
 F_D[-1] = F_D[-2]
 F_g[-1] = F_g[-2]
 F_P[-1] = F_P[-2]
 F_H[-1] = F_H[-2]
+F_A[-1] = F_A[-2]
 
 # Display and save results
-_, ax = plt.subplots()
+figureDPI = 200
+fig, ax = plt.subplots()
 ax.plot(t, V, '-b', label='Y Velocity')
 ax.set_xlabel('Time [s]')
 ax.set_ylabel('Velocity [m/s]')
 ax.set_title(f'Velocity distribution in time, dt = {dt:.3g} s.')
 ax.grid()
 ax.legend()
+fig.set_size_inches(8, 6)
+fig.savefig('img/VelocityDistribution.png', dpi=figureDPI)
 
-_, ax = plt.subplots()
+fig, ax = plt.subplots()
 ax.plot(t, Re_p, '-b', label='Re_p')
 # ax.hlines(Re_p_max, t[0], t[-1], colors='r', linestyles='--', label='Stokes regime')
 ax.set_xlabel('Time [s]')
@@ -87,10 +96,13 @@ ax.set_ylabel('Re_p [-]')
 ax.set_title(f'Particle reynolds number distribution in time, dt = {dt:.3g} s.')
 ax.grid()
 ax.legend()
+fig.set_size_inches(8, 6)
+fig.savefig('img/ReynoldsNo.png', dpi=figureDPI)
 
-_, ax = plt.subplots()
+fig, ax = plt.subplots()
 ax.plot(t, F_g / np.abs(F_g), '-b', label='Gravity cont.')
 ax.plot(t, F_D / np.abs(F_g), '-r', label='Drag cont.')
+ax.plot(t, F_A / np.abs(F_g), '-m', label='Added mass cont.')
 ax.plot(t, F_P / np.abs(F_g), '-g', label='Pressure gradient cont.')
 ax.plot(t, F_H / np.abs(F_g), '-y', label='History cont.')
 ax.set_xlabel('Time [s]')
@@ -98,7 +110,7 @@ ax.set_ylabel('F_x / |F_g| [-]')
 ax.set_title(f'Normalized force distribution in time, dt = {dt:.3g} s.')
 ax.grid()
 ax.legend(loc='lower left')
-
-
+fig.set_size_inches(8, 6)
+fig.savefig('img/NormForce.png', dpi=figureDPI)
 
 plt.show()
