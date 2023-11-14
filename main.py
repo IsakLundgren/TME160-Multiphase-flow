@@ -61,34 +61,27 @@ def solve(dt, schemeOrder=1):
     m_added = 1 / 2 * m_p * rho_f / rho_p
     m_tot = m_p + m_added
 
-    if schemeOrder == 1:
-        # Explicit solver, calculating from previous timestep
-        for i in range(1, N_steps):
-            # Caluclate forces on the particle
-            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(dt, t[i-1], V[i-1], N_steps)
+    # Explicit solver, calculating from previous timestep
+    for i in range(1, N_steps):
+        # Caluclate forces on the particle
+        Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(dt, t[i-1], V[i-1], N_steps)
+        F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
 
-            F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
-
-            # Do timestep
+        # Do timestep
+        if schemeOrder == 1:
+            # Euler's method
             t[i] = t[i-1] + dt
             V[i] = V[i-1] + dt * F_tot[i-1] / m_tot
-
-    elif schemeOrder == 2:
-        # Improved Eulers method, explicit
-        for i in range(1, N_steps):
-            # Caluclate forces on the particle
-            Re_p[i-1], C_D[i-1], F_D[i-1], F_g[i-1], F_P[i-1], F_H[i-1] = getQuantities(dt, t[i-1], V[i-1], N_steps)
-            F_tot[i-1] = F_D[i-1] + F_g[i-1] + F_P[i-1] + F_H[i-1]
-
-            # Do pseudo timestep
+        elif schemeOrder == 2:
+            # Improved Euler's method
             t[i] = t[i-1] + dt
 
-            V_tilde = V[i-1] + dt * F_tot[i-1] / m_tot
-            Re_p_tilde, C_D_tilde, F_D_tilde, F_g_tilde, F_P_tilde, F_H_tilde = getQuantities(dt, t[i-1], V_tilde, N_steps)
-            F_tot_tilde = F_D_tilde + F_g_tilde + F_P_tilde + F_H_tilde
+            V_tld = V[i-1] + dt * F_tot[i-1] / m_tot
+            Re_p_tld, C_D_tld, F_D_tld, F_g_tld, F_P_tld, F_H_tld = getQuantities(dt, t[i-1], V_tld, N_steps)
+            F_tot_tld = F_D_tld + F_g_tld + F_P_tld + F_H_tld
 
             # Do real timestep
-            V[i] = V[i-1] + dt / 2 * (F_tot[i-1] + F_tot_tilde) / m_tot
+            V[i] = V[i-1] + dt / 2 * (F_tot[i-1] + F_tot_tld) / m_tot
 
     # Post-process the added mass force
     F_A = np.zeros(N_steps)
