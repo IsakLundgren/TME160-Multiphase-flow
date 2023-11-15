@@ -36,7 +36,8 @@ simVer = "bubbleColumn"
 plt.close("all")
 #To create a directory and store the relevant post-processed files
 #the file path is --> 'your run directory'/TME160/bubbleColumn
-ppPath = os.path.dirname(os.path.dirname(__file__)) + "/TME160/" + simVer
+ppPath = os.path.dirname(os.path.dirname(__file__)) + "/" + simVer
+imgPath = os.path.dirname(os.path.dirname(__file__)) + "/" + "img"
 #Make directory  if it already doesn't exist
 if not os.path.exists(ppPath):
     os.makedirs(ppPath)
@@ -57,7 +58,8 @@ def getBubbleDia(meanDia,stdDevDia):
         
     return np.random.normal(meanDia,stdDevDia) #sample from a normal distribution
 
-def injectBubble(meanDia, stdDevDia, bubbleList, bubbleMaxID, bubbleDiaArray, bubbleXpos, bubbleInjectionTimeIndex, injectionXpos, timeIndex):
+def injectBubble(meanDia, stdDevDia, bubbleList, bubbleMaxID, bubbleDiaArray,
+                 bubbleXpos, bubbleInjectionTimeIndex, injectionXpos, timeIndex):
     """Injects bubbles and stores them in arrays"""
     """Arrays for storing bubble data"""
     """function I/P's : bubbleList (list of all bubbles injected)"""
@@ -91,7 +93,7 @@ def fluidVelandGrad(py, x, b, mul):
     """function I/P's : mul (fluid dynamic viscosity in Pa.s)"""
     """function O/P's : fluidVelo = py*x/(2*mul)*(2*b-x); fluidXGrad = py/mul*(b-x)"""
     
-    return py*x/(2*mul)*(2*b-x), py/mul*(b-x) #calculate fluid velocity ; calculate the velocity gradient along the y-direction
+    return py * x / (2 * mul) * (2 * b - x), py / mul * (b - x) #calculate fluid velocity ; calculate the velocity gradient along the y-direction
 
 def cl_tomiyama(Re, Eo, sig, rhoL, g): 
         """Calculates the lift co-eff CL based on the Tomiyama model"""
@@ -169,7 +171,7 @@ rhoB = 1.2 #bubble density (kg/m3)
 massMeanBubble = rhoB*4/3*np.pi*(meanDia/2.0)**3 #mass of a mean dia bubble (kg)
 
 #other constants
-g=9.82 #gravity
+g = 9.82 #gravity
 py = 1 #pressure gradient
 
 """
@@ -179,8 +181,8 @@ py = 1 #pressure gradient
 
 """
 #time settings
-dt =  #time step for the simulations (s) -- CHOOSE AN APPROPRIATE TIMESTEP
-tEnd =  #simulation end time (s) -- SPECIFIED IN THE PROBLEM 
+dt = 0.1 #time step for the simulations (s) -- CHOOSE AN APPROPRIATE TIMESTEP
+tEnd = 30 #simulation end time (s) -- SPECIFIED IN THE PROBLEM
 
 #DONT CHANGE THIS
 n_timeSteps = int(np.ceil(tEnd/dt)) #total number of time steps
@@ -192,13 +194,13 @@ massFlowRateTot = 2.4e-6 #total mass flow rate of air (kg/s) -- TRY AND CHANGE T
 n_nozzles = 6 #number of injection nozzles
 
 #TODO: must be filled
-massFlowRateNozzle =    #mass flow rate per nozzle (kg/s)
+massFlowRateNozzle = massFlowRateTot / n_nozzles   #mass flow rate per nozzle (kg/s)
 bubbleInjectionFrequency =      #injection frequency required (1/s)
 
 #total number of bubbles that will be injected during the simulation.
 #Must be an integer, use for example the function int() to convert float to integer.
 #The value must be larger than or equal to the total number of bubbles that is injected during the simulation. It is used to pre-allocate data arrays.
-n_tot_bubbles =   
+n_tot_bubbles =
 
 """
 ####################################################################################################################################
@@ -227,16 +229,18 @@ aliveBubblesID = list() #list to store bubbles that are active in the simulation
 #Initializations
 timeSinceInjection = 1
 bubbleMaxID = -1
-ti=0 #initialize time
+ti = 0 #initialize time
 
 for t in times:
 
     #inject bubbles from all 3 nozzles if:
-    if timeSinceInjection > 1.0/bubbleInjectionFrequency:
+    if timeSinceInjection > 1.0 / bubbleInjectionFrequency:
         timeSinceInjection = 0
         for noz in range(n_nozzles):
-            injectionPos = 2.0*b/(n_nozzles+1)*(noz+1)
-            newBubbleID, updatedBubbleList, bubbleDiaArray, bubbleXpos, bubbleInjectionTimeIndex = injectBubble(meanDia, stdDevDia, aliveBubblesID, bubbleMaxID, bubbleDia, bubbleXpos, bubbleInjectionTimeIndex, injectionPos, ti)
+            injectionPos = 2.0 * b / (n_nozzles + 1) * (noz + 1)
+            newBubbleID, updatedBubbleList, bubbleDiaArray, bubbleXpos, bubbleInjectionTimeIndex = (
+                injectBubble(meanDia, stdDevDia, aliveBubblesID, bubbleMaxID, bubbleDia,
+                             bubbleXpos, bubbleInjectionTimeIndex, injectionPos, ti))
             bubbleMaxID = newBubbleID #setting the maximum bubble ID (@ the relevant time step) 
     else:
         timeSinceInjection = timeSinceInjection + dt
@@ -253,7 +257,7 @@ for t in times:
         uBubble = bubbleVelXdir[ti,bubbleID] #bubble X-velocity at current timestep
         vBubble = bubbleVelYdir[ti,bubbleID] #bubble Y-velocity at current timestep
               
-        massBubble = rhoB * 4.0/3*np.pi*(D/2.0)**3
+        massBubble = rhoB * 4.0 / 3 * np.pi * (D / 2.0) ** 3
         
         """Y-direction (vertical axis)"""   
         
@@ -262,7 +266,7 @@ for t in times:
         
         #Calculate relative velocity between bubble and the surrounding fluid
         #TODO: must be filled
-        Vrel =   #relative velocity along y-direction
+        Vrel = vBubble - Vy  #relative velocity along y-direction
         Re =    #Reynolds number
         Eo =    #Eotvos number
         Cd =    #drag coefficient
@@ -289,7 +293,7 @@ for t in times:
         bubbleVelYdir[ti+1,bubbleID] = 
         
         #Calculate new bubble y-position at the new time-index ti+1:
-        bubbleYpos[ti+1,bubbleID] = 
+        bubbleYpos[ti+1,bubbleID] = bubbleYpos[ti,bubbleID] + bubbleVelYdir[ti+1,bubbleID] * dt
         
         #Domain-treatment
         #if bubble pos is above domain height L, remove from alive bubble list
@@ -299,7 +303,7 @@ for t in times:
         
         """X-direction (horizontal axis)"""
         
-        Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)#Calculate lift co-efficient
+        Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  #Calculate lift co-efficient
         
         #Calculate the forces on the bubble along x-direction
         #TODO: must be filled
@@ -312,14 +316,14 @@ for t in times:
         
         #Calculate new bubble x-position at the new time-index ti+1:
         #TODO: must be filled
-        bubbleXpos[ti+1,bubbleID] = 
+        bubbleXpos[ti+1,bubbleID] = bubbleXpos[ti,bubbleID] + bubbleVelXdir[ti+1,bubbleID] * dt
         
         #Wall-treatment
         #if bubble pos is at one radius distance from a wall and x-vel towards it, set x-vel to 0 and bubble pos to previous pos.
-        if (bubbleXpos[ti+1,bubbleID] < D/2.0) and (bubbleVelXdir[ti,bubbleID] < 0.0):
+        if (bubbleXpos[ti+1,bubbleID] < D / 2.0) and (bubbleVelXdir[ti,bubbleID] < 0.0):
             bubbleVelXdir[ti,bubbleID] = 0.0
             bubbleXpos[ti+1,bubbleID] = bubbleXpos[ti,bubbleID]
-        elif (bubbleXpos[ti+1,bubbleID] > (2*b-D/2.0)) and (bubbleVelXdir[ti,bubbleID] > 0.0):
+        elif (bubbleXpos[ti+1,bubbleID] > (2 * b - D / 2.0)) and (bubbleVelXdir[ti,bubbleID] > 0.0):
             bubbleVelXdir[ti,bubbleID] = 0.0
             bubbleXpos[ti+1,bubbleID] = bubbleXpos[ti,bubbleID]
     
@@ -354,8 +358,8 @@ ax2.set_ylabel('Velocity profile')
 ax2.plot(np.linspace(0,2*b,100),VyToPlot,'--')
 ax1.set_title('Bubble trajectory (colored by bubble size)')
 plt.grid(True)
-figName = "Bubble trajectories.png"
-plt.savefig(os.path.join(ppPath, figName), dpi=250, bbox_inches='tight')
+figName = "BubbleTrajectories.png"
+plt.savefig(os.path.join(imgPath, figName), dpi=250, bbox_inches='tight')
 plt.show()
 
 #Plotting time averaged void fractions
