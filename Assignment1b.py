@@ -39,8 +39,8 @@ simVer = "bubbleColumn"
 plt.close("all")
 # To create a directory and store the relevant post-processed files
 # the file path is --> 'your run directory'/TME160/bubbleColumn
-ppPath = os.path.dirname(os.path.dirname(__file__)) + "/" + simVer
-imgPath = os.path.dirname(os.path.dirname(__file__)) + "/" + "img"
+ppPath = os.path.dirname(os.path.dirname(__file__)) + "\\" + simVer
+imgPath = os.path.dirname(os.path.dirname(__file__)) + "\\" + "img"
 # Make directory  if it already doesn't exist
 if not os.path.exists(ppPath):
     os.makedirs(ppPath)
@@ -298,7 +298,7 @@ for t in times:
 
         # Calculate relative velocity between bubble and the surrounding fluid
         Vrel = vBubble - Vy  # relative velocity along y-direction
-        Re = rhoL * Vrel * D / mul  # Reynolds number
+        Re = rhoL * np.abs(Vrel) * D / mul  # Reynolds number
         Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
         Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)  # drag coefficient
         Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  # Calculate lift coefficient. Assume for the sake of decoupling that it is only dependent on the y-velocity.
@@ -347,7 +347,7 @@ for t in times:
         """X-direction (horizontal axis)"""
 
         # Calculate relative velocity in x directions
-        Urel = bubbleVelXdir
+        Urel = bubbleVelXdir[ti, bubbleID]
 
         # Calculate the forces on the bubble along x-direction
         F_D_X = 3 * np.pi * mul * D * Urel  # N Assume Re << 1
@@ -368,8 +368,9 @@ for t in times:
             bubbleVelXdir[ti, bubbleID] = 0.0
             bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID]
         elif (bubbleXpos[ti + 1, bubbleID] > (2 * b - D / 2.0)) and (bubbleVelXdir[ti, bubbleID] > 0.0):
-            bubbleVelXdir[ti, bubbleID] = 0.0
-            bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID]
+            a = 10
+            # bubbleVelXdir[ti, bubbleID] = 0.0 TODO Undo this comment
+            # bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID] TODO Undo this comment
 
     # remove bubble ID's from list aliveBubblesID (that have left the domain)
     for bubble in bubbleRemoveList:
@@ -403,7 +404,7 @@ ax2.plot(np.linspace(0, 2 * b, 100), VyToPlot, '--')
 ax1.set_title('Bubble trajectory (colored by bubble size)')
 plt.grid(True)
 figName = "BubbleTrajectories.png"
-plt.savefig(os.path.join(imgPath, figName), dpi=250, bbox_inches='tight')
+plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 plt.show()
 
 # Plotting time averaged void fractions
@@ -440,7 +441,7 @@ plt.ylabel('time av void fraction')
 plt.legend(['y = 0.3m', 'y = 1.0m', 'y = 2.0m'])
 plt.grid(True)
 figName = "AreaAveragedVoidFraction.png"
-plt.savefig(os.path.join(imgPath, figName), dpi=250, bbox_inches='tight')
+plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 plt.show()
 
 # bubble pos at a time instant: FIGURE 3
@@ -457,5 +458,5 @@ plt.xlabel('x-pos')
 plt.ylabel('y-pos')
 plt.title('Bubble pos at a given time instant (colored by bubble size)')
 figName = "BubblePosAtAGivenTimeInstant.png"
-plt.savefig(os.path.join(imgPath, figName), dpi=250, bbox_inches='tight')
+plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 plt.show()
