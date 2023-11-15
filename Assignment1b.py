@@ -353,14 +353,13 @@ for t in times:
         F_D_X = 3 * np.pi * mul * D * Urel  # N Assume Re << 1
         F_L_X = -Cl * rhoL * np.pi * D ** 3 / 6 * (Vrel * dVdx)  # N Tomiyama
 
-        FtotX = 1  # total force on the bubble along x-direction
+        FtotX = F_D_X + F_L_X  # total force on the bubble along x-direction
 
         # Calculate bubble x-velocity at the new time-index ti+1: Forward Euler
-        # TODO: must be filled
-        bubbleVelXdir[ti + 1, bubbleID] = 1
+        # Assume no added mass
+        bubbleVelXdir[ti + 1, bubbleID] = bubbleVelXdir[ti, bubbleID] + dt * FtotX / massBubble
 
         # Calculate new bubble x-position at the new time-index ti+1:
-        # TODO: must be filled
         bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID] + bubbleVelXdir[ti + 1, bubbleID] * dt
 
         # Wall-treatment
