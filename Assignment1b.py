@@ -301,6 +301,7 @@ for t in times:
         Re = rhoL * Vrel * D / mul  # Reynolds number
         Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
         Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)  # drag coefficient
+        Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  # Calculate lift coefficient. Assume for the sake of decoupling that it is only dependent on the y-velocity.
 
         # Mark the bubble as bad if it does not satisfy spherical conditions
         if not invalidAssumptionBubbles[bubbleID]:
@@ -313,6 +314,7 @@ for t in times:
         F_D = 1 / 2 * rhoL * D ** 2 * np.pi / 4 * Cd * np.abs(Vrel) * Vrel  # N
         F_g = -massBubble * g  # N
         F_P = massBubble * rhoL / rhoB * g  # N
+        F_L = -Cl * rhoL * np.pi * D ** 3 / 6 * (-bubbleVelXdir[ti, bubbleID] * dVdx)  # N Tomiyama
 
         # Calculate the added mass
         m_added = 1 / 2 * massBubble * rhoL / rhoB
@@ -327,7 +329,7 @@ for t in times:
         else:
             Fhist = 0
 
-        FtotY = F_D + F_g + F_P + Fhist  # total force on the bubble along y-direction
+        FtotY = F_D + F_g + F_P + F_L + Fhist  # total force on the bubble along y-direction
         totMass = massBubble + m_added  # total mass of the bubble + mass of the fluid carried by the bubble
 
         # Calculate bubble y-velocity at the new time-index ti+1: Forward Euler
@@ -344,10 +346,12 @@ for t in times:
 
         """X-direction (horizontal axis)"""
 
-        Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  # Calculate lift co-efficient
+        # Calculate relative velocity in x directions
+        Urel = bubbleVelXdir
 
         # Calculate the forces on the bubble along x-direction
-        # TODO: must be filled
+        F_D_X = 3 * np.pi * mul * D * Urel  # N Assume Re << 1
+        F_L_X = -Cl * rhoL * np.pi * D ** 3 / 6 * (Vrel * dVdx)  # N Tomiyama
 
         FtotX = 1  # total force on the bubble along x-direction
 
