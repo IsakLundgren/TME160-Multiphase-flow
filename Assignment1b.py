@@ -310,7 +310,9 @@ for t in times:
                 invalidAssumptionBubbles[bubbleID] = True
 
         # Calculate the forces on the bubble along the y-direction
-        # TODO: must be filled
+        F_D = 1 / 2 * rhoL * D ** 2 * np.pi / 4 * Cd * np.abs(Vrel) * Vrel  # N
+        F_g = -massBubble * g  # N
+        F_P = massBubble * rhoL / rhoB * g  # N
 
         # Store time index when bubble is injected: used for computing the history force
         injectionTimeIndex = np.where(bubbleXpos[:, bubbleID] > 0.0)[0][0]
