@@ -197,7 +197,7 @@ py = 1  # pressure gradient
 
 """
 # time settings
-dt = 0.1  # time step for the simulations (s) -- CHOOSE AN APPROPRIATE TIMESTEP
+dt = 0.01  # time step for the simulations (s) -- CHOOSE AN APPROPRIATE TIMESTEP
 tEnd = 30  # simulation end time (s) -- SPECIFIED IN THE PROBLEM
 
 # DON'T CHANGE THIS
@@ -210,7 +210,7 @@ massFlowRateTot = 2.4e-6  # total mass flow rate of air (kg/s) -- TRY AND CHANGE
 n_nozzles = 6  # number of injection nozzles
 
 massFlowRateNozzle = massFlowRateTot / n_nozzles  # mass flow rate per nozzle (kg/s)
-bubbleInjectionFrequency = massFlowRateNozzle / massMeanBubble  # injection frequency required (1/s)
+bubbleInjectionFrequency = massFlowRateTot / massMeanBubble  # injection frequency required (1/s)
 
 # total number of bubbles that will be injected during the simulation.
 # Must be an integer, use for example the function int() to convert float to integer.
@@ -265,6 +265,9 @@ ti = 0  # initialize time
 
 for t in times:
 
+    # Print progress
+    print(f'Current timestep: {t:.4g} s.')
+
     # inject bubbles from all 3 nozzles if:
     if timeSinceInjection > 1.0 / bubbleInjectionFrequency:
         timeSinceInjection = 0
@@ -286,6 +289,8 @@ for t in times:
             break
 
         D = bubbleDia[bubbleID]  # bubble diamater
+        xBubble = bubbleXpos[ti, bubbleID]
+        yBubble = bubbleYpos[ti, bubbleID]
         uBubble = bubbleVelXdir[ti, bubbleID]  # bubble X-velocity at current timestep
         vBubble = bubbleVelYdir[ti, bubbleID]  # bubble Y-velocity at current timestep
 
@@ -297,7 +302,7 @@ for t in times:
         Vy, dVdx = fluidVelandGrad(py, bubbleXpos[ti, bubbleID], b, mul)
 
         # Calculate relative velocity between bubble and the surrounding fluid
-        Vrel = vBubble - Vy  # relative velocity along y-direction
+        Vrel = Vy - vBubble  # relative velocity along y-direction
         Re = rhoL * np.abs(Vrel) * D / mul  # Reynolds number
         Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
         Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)  # drag coefficient
@@ -314,7 +319,7 @@ for t in times:
         F_D = 1 / 2 * rhoL * D ** 2 * np.pi / 4 * Cd * np.abs(Vrel) * Vrel  # N
         F_g = -massBubble * g  # N
         F_P = massBubble * rhoL / rhoB * g  # N
-        F_L = -Cl * rhoL * np.pi * D ** 3 / 6 * (-bubbleVelXdir[ti, bubbleID] * dVdx)  # N Tomiyama
+        F_L = -Cl * rhoL * np.pi * D ** 3 / 6 * (-uBubble * dVdx)  # N Tomiyama
 
         # Calculate the added mass
         m_added = 1 / 2 * massBubble * rhoL / rhoB
@@ -333,9 +338,11 @@ for t in times:
         totMass = massBubble + m_added  # total mass of the bubble + mass of the fluid carried by the bubble
 
         # Calculate bubble y-velocity at the new time-index ti+1: Forward Euler
-        bubbleVelYdir[ti + 1, bubbleID] = bubbleVelYdir[ti, bubbleID] + dt * FtotY / totMass
+        debuggYvel = vBubble + dt * FtotY / totMass
+        bubbleVelYdir[ti + 1, bubbleID] = vBubble + dt * FtotY / totMass
 
         # Calculate new bubble y-position at the new time-index ti+1:
+        debuggYpos = bubbleYpos[ti, bubbleID] + bubbleVelYdir[ti + 1, bubbleID] * dt
         bubbleYpos[ti + 1, bubbleID] = bubbleYpos[ti, bubbleID] + bubbleVelYdir[ti + 1, bubbleID] * dt
 
         # Domain-treatment
@@ -347,7 +354,7 @@ for t in times:
         """X-direction (horizontal axis)"""
 
         # Calculate relative velocity in x directions
-        Urel = bubbleVelXdir[ti, bubbleID]
+        Urel = -uBubble
 
         # Calculate the forces on the bubble along x-direction
         F_D_X = 3 * np.pi * mul * D * Urel  # N Assume Re << 1
@@ -357,9 +364,11 @@ for t in times:
 
         # Calculate bubble x-velocity at the new time-index ti+1: Forward Euler
         # Assume no added mass
-        bubbleVelXdir[ti + 1, bubbleID] = bubbleVelXdir[ti, bubbleID] + dt * FtotX / massBubble
+        debuggXvel = bubbleVelXdir[ti, bubbleID] + dt * FtotX / totMass
+        bubbleVelXdir[ti + 1, bubbleID] = bubbleVelXdir[ti, bubbleID] + dt * FtotX / totMass
 
         # Calculate new bubble x-position at the new time-index ti+1:
+        debuggXpos = bubbleXpos[ti, bubbleID] + bubbleVelXdir[ti + 1, bubbleID] * dt
         bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID] + bubbleVelXdir[ti + 1, bubbleID] * dt
 
         # Wall-treatment
@@ -459,4 +468,5 @@ plt.ylabel('y-pos')
 plt.title('Bubble pos at a given time instant (colored by bubble size)')
 figName = "BubblePosAtAGivenTimeInstant.png"
 plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
+
 plt.show()
