@@ -314,6 +314,9 @@ for t in times:
         F_g = -massBubble * g  # N
         F_P = massBubble * rhoL / rhoB * g  # N
 
+        # Calculate the added mass
+        m_added = 1 / 2 * massBubble * rhoL / rhoB
+
         # Store time index when bubble is injected: used for computing the history force
         injectionTimeIndex = np.where(bubbleXpos[:, bubbleID] > 0.0)[0][0]
         # the history force Fhist is computed for you as:
@@ -324,13 +327,11 @@ for t in times:
         else:
             Fhist = 0
 
-        # TODO: must be filled
-        FtotY = 1  # total force on the bubble along y-direction
-        totMass = 1  # total mass of the bubble + mass of the fluid carried by the bubble
+        FtotY = F_D + F_g + F_P + Fhist  # total force on the bubble along y-direction
+        totMass = massBubble + m_added  # total mass of the bubble + mass of the fluid carried by the bubble
 
         # Calculate bubble y-velocity at the new time-index ti+1: Forward Euler
-        # TODO: must be filled
-        bubbleVelYdir[ti + 1, bubbleID] = 1
+        bubbleVelYdir[ti + 1, bubbleID] = bubbleVelYdir[ti, bubbleID] + dt * FtotY / totMass
 
         # Calculate new bubble y-position at the new time-index ti+1:
         bubbleYpos[ti + 1, bubbleID] = bubbleYpos[ti, bubbleID] + bubbleVelYdir[ti + 1, bubbleID] * dt
