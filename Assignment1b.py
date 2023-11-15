@@ -28,6 +28,7 @@ from matplotlib import cm
 from scipy.stats import norm
 from scipy.integrate import quad
 import numpy as np
+import time
 import os
 import sys
 
@@ -377,9 +378,8 @@ for t in times:
             bubbleVelXdir[ti, bubbleID] = 0.0
             bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID]
         elif (bubbleXpos[ti + 1, bubbleID] > (2 * b - D / 2.0)) and (bubbleVelXdir[ti, bubbleID] > 0.0):
-            a = 10
-            # bubbleVelXdir[ti, bubbleID] = 0.0 TODO Undo this comment
-            # bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID] TODO Undo this comment
+            bubbleVelXdir[ti, bubbleID] = 0.0
+            bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID]
 
     # remove bubble ID's from list aliveBubblesID (that have left the domain)
     for bubble in bubbleRemoveList:
@@ -396,6 +396,8 @@ for t in times:
 """
 # %%
 # Plotting bubble trajectories (colored by bubble dia): FIGURE 1
+print('\nCreating bubble trajectory plot...')
+irl_time_start = time.time()
 VyToPlot, dVdxToPlot = fluidVelandGrad(py, np.linspace(0, 2 * b, 100), b, mul)
 
 fig, ax1 = plt.subplots(figsize=(7, 6))
@@ -415,8 +417,12 @@ plt.grid(True)
 figName = "BubbleTrajectories.png"
 plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 plt.show()
+irl_time_end = time.time()
+print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
 
 # Plotting time averaged void fractions
+print('\nCreating time averaged void fractions plot...')
+irl_time_start = time.time()
 binsInXdir = 10  # number of bins along x-direction
 dy = 0.02  # delta y (height of the averaging area along y-direction)
 
@@ -452,8 +458,12 @@ plt.grid(True)
 figName = "AreaAveragedVoidFraction.png"
 plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 plt.show()
+irl_time_end = time.time()
+print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
 
 # bubble pos at a time instant: FIGURE 3
+print('\nCreating position plot...')
+irl_time_start = time.time()
 plt.figure(figsize=(7, 6))
 plt.rcParams.update({'font.size': 13})
 plt.rcParams["font.family"] = "serif"
@@ -468,5 +478,8 @@ plt.ylabel('y-pos')
 plt.title('Bubble pos at a given time instant (colored by bubble size)')
 figName = "BubblePosAtAGivenTimeInstant.png"
 plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
+irl_time_end = time.time()
+print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
+print('Hello')
 
 plt.show()
