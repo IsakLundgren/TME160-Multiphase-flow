@@ -25,6 +25,8 @@ __email__ = " ananda@chalmers.se and niklas.hidman@chalmers.se"
 """
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from scipy.stats import norm
+from scipy.integrate import quad
 import numpy as np
 import os
 import sys
@@ -193,14 +195,18 @@ times = np.linspace(0,tEnd,n_timeSteps) #list with stored values for time indice
 massFlowRateTot = 2.4e-6 #total mass flow rate of air (kg/s) -- TRY AND CHANGE THIS
 n_nozzles = 6 #number of injection nozzles
 
-#TODO: must be filled
 massFlowRateNozzle = massFlowRateTot / n_nozzles   #mass flow rate per nozzle (kg/s)
-bubbleInjectionFrequency =      #injection frequency required (1/s)
+bubbleInjectionFrequency = massFlowRateNozzle / massMeanBubble     #injection frequency required (1/s)
 
 #total number of bubbles that will be injected during the simulation.
 #Must be an integer, use for example the function int() to convert float to integer.
 #The value must be larger than or equal to the total number of bubbles that is injected during the simulation. It is used to pre-allocate data arrays.
-n_tot_bubbles =
+bubblesTotalMass = massFlowRateTot * tEnd
+def integrand(d):
+    return norm.pdf(d, meanDia, stdDevDia) / (rhoB * 4 / 3 * np.pi * (d / 2) ** 3)
+
+n_expected_bubbles = bubblesTotalMass * quad(integrand, 0, 2 * meanDia)[0]
+n_tot_bubbles = int(1.15 * n_expected_bubbles)
 
 """
 ####################################################################################################################################
@@ -290,7 +296,7 @@ for t in times:
         
         #Calculate bubble y-velocity at the new time-index ti+1: Forward Euler
         #TODO: must be filled
-        bubbleVelYdir[ti+1,bubbleID] = 
+        bubbleVelYdir[ti+1,bubbleID] =
         
         #Calculate new bubble y-position at the new time-index ti+1:
         bubbleYpos[ti+1,bubbleID] = bubbleYpos[ti,bubbleID] + bubbleVelYdir[ti+1,bubbleID] * dt
@@ -312,7 +318,7 @@ for t in times:
         
         #Calculate bubble x-velocity at the new time-index ti+1: Forward Euler
         #TODO: must be filled
-        bubbleVelXdir[ti+1,bubbleID] = 
+        bubbleVelXdir[ti+1,bubbleID] =
         
         #Calculate new bubble x-position at the new time-index ti+1:
         #TODO: must be filled
@@ -378,7 +384,7 @@ for i in range(n_timeSteps):
     
     
 #time averaging
-startAverTimeIndex =  #skipping first time-instants (why is this done?)-- CHOOSE AN APPROPRIATE INTERVAL
+startAverTimeIndex = int(bubbleDeletionTimeIndex[0] * 1.15) #skipping first time-instants (why is this done?)-- CHOOSE AN APPROPRIATE INTERVAL
 timeAverageOverBins1 = np.mean(avVoidFracArea1[startAverTimeIndex:-1,:],axis=0) #@y = 0.3m
 timeAverageOverBins2 = np.mean(avVoidFracArea2[startAverTimeIndex:-1,:],axis=0) #@y = 1.0m
 timeAverageOverBins3 = np.mean(avVoidFracArea3[startAverTimeIndex:-1,:],axis=0) #@y = 2.0m
@@ -395,15 +401,15 @@ plt.xlabel('x-pos')
 plt.ylabel('time av void fraction')
 plt.legend(['y = 0.3m','y = 1.0m','y = 2.0m'])
 plt.grid(True)
-figName = "Area averaged void fraction.png"
-plt.savefig(os.path.join(ppPath, figName), dpi=250, bbox_inches='tight')
+figName = "AreaAveragedVoidFraction.png"
+plt.savefig(os.path.join(imgPath, figName), dpi=250, bbox_inches='tight')
 plt.show()
 
 #bubble pos at a time instant: FIGURE 3
 plt.figure(figsize=(7, 6))
 plt.rcParams.update({'font.size': 13})
 plt.rcParams["font.family"] = "serif" 
-timeIndexToPlot = # CHOOSE AN APPROPRIATE VALUE
+timeIndexToPlot = int(bubbleDeletionTimeIndex[0] * 1.15)  # CHOOSE AN APPROPRIATE VALUE
 for bubble in range(bubbleMaxID):
     if (bubbleYpos[timeIndexToPlot,bubble] > 0.0):
         plt.plot(bubbleXpos[timeIndexToPlot,bubble],bubbleYpos[timeIndexToPlot,bubble],'o',color=cm.jet(bubbleDia[bubble]/np.max(bubbleDia)))
@@ -411,7 +417,7 @@ plt.ylim([0,L])
 plt.xlabel('x-pos') 
 plt.ylabel('y-pos') 
 plt.title('Bubble pos at a given time instant (colored by bubble size)')
-figName = "Bubble pos at a given time instant.png"
-plt.savefig(os.path.join(ppPath, figName), dpi=250, bbox_inches='tight')
+figName = "BubblePosAtAGivenTimeInstant.png"
+plt.savefig(os.path.join(imgPath, figName), dpi=250, bbox_inches='tight')
 plt.show()
 
