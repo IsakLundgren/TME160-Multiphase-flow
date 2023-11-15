@@ -297,11 +297,17 @@ for t in times:
         Vy, dVdx = fluidVelandGrad(py, bubbleXpos[ti, bubbleID], b, mul)
 
         # Calculate relative velocity between bubble and the surrounding fluid
-        # TODO: must be filled
         Vrel = vBubble - Vy  # relative velocity along y-direction
-        Re = 1  # Reynolds number
-        Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eotvos number
-        Cd = 1  # drag coefficient
+        Re = rhoL * Vrel * D / mul  # Reynolds number
+        Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
+        Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)  # drag coefficient
+
+        # Mark the bubble as bad if it does not satisfy spherical conditions
+        if not invalidAssumptionBubbles[bubbleID]:
+            if Re > 1:
+                invalidAssumptionBubbles[bubbleID] = True
+            elif Eo > 1:
+                invalidAssumptionBubbles[bubbleID] = True
 
         # Calculate the forces on the bubble along the y-direction
         # TODO: must be filled
