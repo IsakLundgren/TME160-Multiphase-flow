@@ -310,10 +310,8 @@ for t in times:
         Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  # Calculate lift coefficient. Assume for the sake of decoupling that it is only dependent on the y-velocity.
 
         # Mark the bubble as bad if it does not satisfy spherical conditions
-        if not invalidAssumptionBubbles[bubbleID]:
-            if Re > 1:
-                invalidAssumptionBubbles[bubbleID] = True
-            elif Eo > 1:
+        if not invalidAssumptionBubbles[bubbleID] and yBubble > 0.1 * L:
+            if Re > 1 and Eo > 1:
                 invalidAssumptionBubbles[bubbleID] = True
 
         # Calculate the forces on the bubble along the y-direction
@@ -480,6 +478,15 @@ figName = "BubblePosAtAGivenTimeInstant.png"
 plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 irl_time_end = time.time()
 print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
-print('Hello')
 
+# Calculate fraction of bubbles who did not satisfy the conditions for spherical shape
+n_invalid_bubbles = 0.0
+for i in range(bubbleMaxID):
+    if invalidAssumptionBubbles[i]:
+        n_invalid_bubbles += 1
+
+invShapeFrac = n_invalid_bubbles / bubbleMaxID
+print(f'\n{invShapeFrac * 100:.3g}% of the bubbles did not meet the criteria for spherical shape (Re and Eo > 1).')
+
+a = 10
 plt.show()
