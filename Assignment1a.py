@@ -39,7 +39,7 @@ def getQuantities(dt, time, v, N_steps):
     gravity = -m_p * g  # N
     pressureGrad = m_p * rho_f / rho_p * g  # N
     if time != 0:
-        history = m_p * (v - V_0) / np.sqrt(0.5 * time)
+        history = -m_p * (v - V_0) / np.sqrt(0.5 * time)
     else:
         history = 0
 
