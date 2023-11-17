@@ -38,7 +38,10 @@ def getQuantities(dt, time, v, N_steps):
     drag = 1 / 2 * rho_f * d_p ** 2 * np.pi / 4 * dragCoeff * np.abs(U_f - v) * (U_f - v)  # N
     gravity = -m_p * g  # N
     pressureGrad = m_p * rho_f / rho_p * g  # N
-    history = m_p * (v - V_0) / np.sqrt(0.5 * (t_0 + dt * N_steps))
+    if time != 0:
+        history = m_p * (v - V_0) / np.sqrt(0.5 * time)
+    else:
+        history = 0
 
     return reynolds, dragCoeff, drag, gravity, pressureGrad, history
 
