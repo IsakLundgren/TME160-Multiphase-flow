@@ -244,6 +244,7 @@ bubbleXpos = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. 
 bubbleYpos = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble y-positions
 bubbleVelXdir = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble x-velocities
 bubbleVelYdir = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble y-velocities
+bubbleHistoryNorm = np.zeros([n_timeSteps, n_tot_bubbles])
 bubbleRe = np.zeros([n_timeSteps, n_tot_bubbles])
 bubbleEo = np.zeros([n_timeSteps, n_tot_bubbles])
 
@@ -345,6 +346,9 @@ for t in times:
         FtotY = F_D + F_g + F_P + F_L + Fhist  # total force on the bubble along y-direction
         totMass = massBubble + m_added  # total mass of the bubble + mass of the fluid carried by the bubble
 
+        # Store history force normalized with the bouyant force
+        bubbleHistoryNorm[ti, bubbleID] = Fhist / F_P
+
         # Calculate bubble y-velocity at the new time-index ti+1: Forward Euler
         debuggYvel = vBubble + dt * FtotY / totMass
         bubbleVelYdir[ti + 1, bubbleID] = vBubble + dt * FtotY / totMass
@@ -439,9 +443,9 @@ avVoidFracArea2 = np.zeros([n_timeSteps, int(binsInXdir)])  # @y = 1.0m
 avVoidFracArea3 = np.zeros([n_timeSteps, int(binsInXdir)])  # @y = 2.0m
 
 for i in range(n_timeSteps):
-    avVoidFracArea1[i, :] = areaAverageVoidFractionWithinBounds(0.3, 0.3 - dy, binsInXdir, i, b)
-    avVoidFracArea2[i, :] = areaAverageVoidFractionWithinBounds(1, 1 - dy, binsInXdir, i, b)
-    avVoidFracArea3[i, :] = areaAverageVoidFractionWithinBounds(2, 2 - dy, binsInXdir, i, b)
+    avVoidFracArea1[i, :] = areaAverageVoidFractionWithinBounds(0.1, 0.1 - dy, binsInXdir, i, b)
+    avVoidFracArea2[i, :] = areaAverageVoidFractionWithinBounds(L / 2, L / 2 - dy, binsInXdir, i, b)
+    avVoidFracArea3[i, :] = areaAverageVoidFractionWithinBounds(L, L - dy, binsInXdir, i, b)
 
 # time averaging
 startAverTimeIndex = int(bubbleDeletionTimeIndex[
@@ -488,6 +492,27 @@ plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 irl_time_end = time.time()
 print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
 
+# Plotting bubble trajectories (colored by bubble dia): FIGURE 1
+print('\nHistory force plot...')
+irl_time_start = time.time()
+
+fig, ax1 = plt.subplots(figsize=(7, 6))
+ax1.set_xlabel('y-coord')
+ax1.set_ylabel('F_H / F_P')
+for bubble in range(0, bubbleMaxID, int(bubbleMaxID / 20)):
+    tStart = bubbleInjectionTimeIndex[bubble] + 1
+    tEnd = bubbleDeletionTimeIndex[bubble] - 1
+    ax1.plot(bubbleYpos[tStart:tEnd, bubble], bubbleHistoryNorm[tStart:tEnd, bubble],
+             color=cm.jet(bubbleDia[bubble] / np.max(bubbleDia)))
+
+ax1.set_title('History force normalized buoyant force (colored by bubble size)')
+plt.grid(True)
+figName = "BubbleHistoryForce.png"
+plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
+plt.show()
+irl_time_end = time.time()
+print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
+
 n_invalid_bubbles = 0.0
 halfLengthRe = []
 halfLengthEo = []
@@ -510,7 +535,6 @@ halfLengthReAvg = np.mean(halfLengthRe)
 halfLengthEoAvg = np.mean(halfLengthEo)
 print(f'\nThe average Reynolds number at y = {L / 2:.3g} m is {halfLengthReAvg:.3g}.')
 print(f'The average Eötvös number at y = {L / 2:.3g} m is {halfLengthEoAvg:.3g}.')
-
 
 a = 10
 plt.show()
