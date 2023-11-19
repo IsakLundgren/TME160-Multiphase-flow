@@ -244,6 +244,8 @@ bubbleXpos = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. 
 bubbleYpos = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble y-positions
 bubbleVelXdir = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble x-velocities
 bubbleVelYdir = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble y-velocities
+bubbleRe = np.zeros([n_timeSteps, n_tot_bubbles])
+bubbleEo = np.zeros([n_timeSteps, n_tot_bubbles])
 
 # Initialize 1-D arrays with bubble injection related properties
 bubbleDia = np.zeros([n_tot_bubbles])  # array with diameters of all injected bubbles
@@ -306,12 +308,19 @@ for t in times:
         Vrel = Vy - vBubble  # relative velocity along y-direction
         Re = rhoL * np.abs(Vrel) * D / mul  # Reynolds number
         Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
-        Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)  # drag coefficient
+        if Re < 0.1:  # drag coefficient
+            Cd = 24 / Re
+        else:
+            Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)
         Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  # Calculate lift coefficient. Assume for the sake of decoupling that it is only dependent on the y-velocity.
+
+        # Store dimensionless numbers
+        bubbleRe[ti, bubbleID] = Re
+        bubbleEo[ti, bubbleID] = Eo
 
         # Mark the bubble as bad if it does not satisfy spherical conditions
         if not invalidAssumptionBubbles[bubbleID] and yBubble > 0.1 * L:
-            if Re > 1 and Eo > 1:
+            if Re > 2 and Eo > 2:
                 invalidAssumptionBubbles[bubbleID] = True
 
         # Calculate the forces on the bubble along the y-direction
@@ -479,14 +488,29 @@ plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 irl_time_end = time.time()
 print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
 
-# Calculate fraction of bubbles who did not satisfy the conditions for spherical shape
 n_invalid_bubbles = 0.0
+halfLengthRe = []
+halfLengthEo = []
 for i in range(bubbleMaxID):
+    # Calculate fraction of bubbles who did not satisfy the conditions for spherical shape
     if invalidAssumptionBubbles[i]:
         n_invalid_bubbles += 1
 
+    # Fetch particle Reynolds number at y = L / 2
+    absDiffRe = np.abs(bubbleRe[:, i] - L / 2)
+    if np.min(absDiffRe) < 0.1:
+        ihalfLength = absDiffRe.argmin()
+        halfLengthRe.append(bubbleRe[ihalfLength, i])
+        halfLengthEo.append(bubbleEo[ihalfLength, i])
+
 invShapeFrac = n_invalid_bubbles / bubbleMaxID
-print(f'\n{invShapeFrac * 100:.3g}% of the bubbles did not meet the criteria for spherical shape (Re and Eo > 1).')
+print(f'\n{invShapeFrac * 100:.3g}% of the bubbles did not meet the criteria for spherical shape (Re and Eo > 2).')
+
+halfLengthReAvg = np.mean(halfLengthRe)
+halfLengthEoAvg = np.mean(halfLengthEo)
+print(f'\nThe average Reynolds number at y = {L / 2:.3g} m is {halfLengthReAvg:.3g}.')
+print(f'The average Eötvös number at y = {L / 2:.3g} m is {halfLengthEoAvg:.3g}.')
+
 
 a = 10
 plt.show()
