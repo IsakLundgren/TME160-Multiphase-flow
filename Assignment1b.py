@@ -244,9 +244,12 @@ bubbleXpos = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. 
 bubbleYpos = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble y-positions
 bubbleVelXdir = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble x-velocities
 bubbleVelYdir = np.zeros([n_timeSteps, n_tot_bubbles])  # time along with corresp. bubble y-velocities
+bubbleVrelYdir = np.zeros([n_timeSteps, n_tot_bubbles])
 bubbleHistoryNorm = np.zeros([n_timeSteps, n_tot_bubbles])
+bubbleLiftNorm = np.zeros([n_timeSteps, n_tot_bubbles])
 bubbleRe = np.zeros([n_timeSteps, n_tot_bubbles])
 bubbleEo = np.zeros([n_timeSteps, n_tot_bubbles])
+bubbleCl = np.zeros([n_timeSteps, n_tot_bubbles])
 
 # Initialize 1-D arrays with bubble injection related properties
 bubbleDia = np.zeros([n_tot_bubbles])  # array with diameters of all injected bubbles
@@ -318,6 +321,8 @@ for t in times:
         # Store dimensionless numbers
         bubbleRe[ti, bubbleID] = Re
         bubbleEo[ti, bubbleID] = Eo
+        bubbleCl[ti, bubbleID] = Cl
+        bubbleVrelYdir[ti, bubbleID] = Vrel
 
         # Mark the bubble as bad if it does not satisfy spherical conditions
         if not invalidAssumptionBubbles[bubbleID] and yBubble > 0.1 * L:
@@ -346,7 +351,7 @@ for t in times:
         FtotY = F_D + F_g + F_P + F_L + Fhist  # total force on the bubble along y-direction
         totMass = massBubble + m_added  # total mass of the bubble + mass of the fluid carried by the bubble
 
-        # Store history force normalized with the bouyant force
+        # Store forces normalized with the bouyant force
         bubbleHistoryNorm[ti, bubbleID] = Fhist / F_P
 
         # Calculate bubble y-velocity at the new time-index ti+1: Forward Euler
@@ -370,7 +375,10 @@ for t in times:
 
         # Calculate the forces on the bubble along x-direction
         F_D_X = 3 * np.pi * mul * D * Urel  # N Assume Re << 1
-        F_L_X = -Cl * rhoL * np.pi * D ** 3 / 6 * (Vrel * dVdx)  # N Tomiyama
+        F_L_X = -Cl * rhoL * np.pi * D ** 3 / 6 * (-Vrel * dVdx)  # N Tomiyama
+
+        # Store forces normalized with the bouyant force
+        bubbleLiftNorm[ti, bubbleID] = F_L_X / F_P
 
         FtotX = F_D_X + F_L_X  # total force on the bubble along x-direction
 
@@ -492,8 +500,8 @@ plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
 irl_time_end = time.time()
 print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
 
-# Plotting bubble trajectories (colored by bubble dia): FIGURE 1
-print('\nHistory force plot...')
+# Plotting bubble trajectories (colored by bubble dia): FIGURE 4
+print('\nCreating history force plot...')
 irl_time_start = time.time()
 
 fig, ax1 = plt.subplots(figsize=(7, 6))
@@ -513,6 +521,54 @@ plt.show()
 irl_time_end = time.time()
 print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
 
+# Plot snapshot of quanitities ordered by diameter: FIGURE 5
+print('Creating mass-ordered plots...')
+irl_time_start = time.time()
+
+twelfthLengthFL = []
+twelfthLengthCL = []
+twelfthLengthVrel = []
+twelfthLengthDiameter = []
+for bubble in range(bubbleMaxID):
+    # Fetch particle Reynolds number at y = L / 12 and x < b
+    absDiffYpos = np.abs(bubbleYpos[:, bubble] - L / 12)
+    if np.min(absDiffYpos) < 0.1:
+        itwelfthLength = absDiffYpos.argmin()
+        # Filter out x > b and filter for one statistical outlier
+        if bubbleXpos[itwelfthLength, bubble] < b and 1 > bubbleLiftNorm[itwelfthLength, bubble] > -1:
+            twelfthLengthFL.append(bubbleLiftNorm[itwelfthLength, bubble])
+            twelfthLengthCL.append(bubbleCl[itwelfthLength, bubble])
+            twelfthLengthVrel.append(bubbleVrelYdir[itwelfthLength, bubble])
+            twelfthLengthDiameter.append(bubbleDia[bubble])
+
+fig, axs = plt.subplots(1, 3, figsize=(12, 4), sharey=True)
+
+axs[0].scatter(twelfthLengthFL, twelfthLengthDiameter, c='r')
+axs[0].set_title('Normalized lift force (x-direction)')
+axs[0].set_xlabel('F_L / F_g [-]')
+axs[0].set_ylabel('Bubble diameter [m]')
+axs[0].grid(True)
+
+axs[1].scatter(twelfthLengthCL, twelfthLengthDiameter, c='g')
+axs[1].set_title('Lift coefficient')
+axs[1].set_xlabel('C_L [-]')
+axs[1].grid(True)
+
+axs[2].scatter(twelfthLengthVrel, twelfthLengthDiameter, c='b')
+axs[2].set_title('Relative velocity (y direction)')
+axs[2].set_xlabel('V_bubble - V_fluid [m/s]')
+axs[2].grid(True)
+
+plt.tight_layout()
+
+figName = "BubbleDiameterOrdered.png"
+plt.savefig("img/" + figName, dpi=250, bbox_inches='tight')
+
+irl_time_end = time.time()
+print(f'Done! Took {(irl_time_end - irl_time_start) * 1e3:.4g} milliseconds.')
+
+
+
 n_invalid_bubbles = 0.0
 halfLengthRe = []
 halfLengthEo = []
@@ -522,14 +578,14 @@ for i in range(bubbleMaxID):
         n_invalid_bubbles += 1
 
     # Fetch particle Reynolds number at y = L / 2
-    absDiffRe = np.abs(bubbleRe[:, i] - L / 2)
-    if np.min(absDiffRe) < 0.1:
-        ihalfLength = absDiffRe.argmin()
+    absDiffYpos = np.abs(bubbleYpos[:, i] - L / 2)
+    if np.min(absDiffYpos) < 0.1:
+        ihalfLength = absDiffYpos.argmin()
         halfLengthRe.append(bubbleRe[ihalfLength, i])
         halfLengthEo.append(bubbleEo[ihalfLength, i])
 
 invShapeFrac = n_invalid_bubbles / bubbleMaxID
-print(f'\n{invShapeFrac * 100:.3g}% of the bubbles did not meet the criteria for spherical shape (Re and Eo > 2).')
+print(f'\n{invShapeFrac * 100:.3g}% of the bubbles did not meet the criteria for spherical shape (Re or Eo < 2).')
 
 halfLengthReAvg = np.mean(halfLengthRe)
 halfLengthEoAvg = np.mean(halfLengthEo)
