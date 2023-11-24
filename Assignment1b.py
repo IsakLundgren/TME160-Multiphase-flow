@@ -314,10 +314,16 @@ for t in times:
         UVTotRel = np.sqrt(Urel ** 2 + Vrel ** 2)
         Re = rhoL * UVTotRel * D / mul  # Reynolds number
         Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
-        if Re < 0.1:  # drag coefficient
-            Cd = 24 / Re
+        if Re == 0:  # drag coefficient
+            Cd = 0
         else:
-            Cd = 24 / Re * (1 + 0.15 * Re ** 0.687)
+            beta = 24 / 16  # Adjust to 24 / Re correlation
+            Cd = beta * np.max([
+                np.min([
+                    16 / Re * (1 + 0.15 * Re ** 0.687),
+                    48 / Re]),
+                8 / 3 * Eo / (Eo + 4)
+            ])
         Cl = cl_tomiyama(Re, Eo, sig, rhoL, g)  # Calculate lift coefficient. Assume for the sake of decoupling that it is only dependent on the y-velocity.
 
         # Store dimensionless numbers
