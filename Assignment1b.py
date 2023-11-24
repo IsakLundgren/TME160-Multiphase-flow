@@ -309,8 +309,10 @@ for t in times:
         Vy, dVdx = fluidVelandGrad(py, bubbleXpos[ti, bubbleID], b, mul)
 
         # Calculate relative velocity between bubble and the surrounding fluid
+        Urel = -uBubble
         Vrel = Vy - vBubble  # relative velocity along y-direction
-        Re = rhoL * np.abs(Vrel) * D / mul  # Reynolds number
+        UVTotRel = np.sqrt(Urel ** 2 + Vrel ** 2)
+        Re = rhoL * UVTotRel * D / mul  # Reynolds number
         Eo = g * np.abs(rhoL - rhoB) * D ** 2 / sig  # Eötvös number
         if Re < 0.1:  # drag coefficient
             Cd = 24 / Re
@@ -330,7 +332,7 @@ for t in times:
                 invalidAssumptionBubbles[bubbleID] = True
 
         # Calculate the forces on the bubble along the y-direction
-        F_D = 1 / 2 * rhoL * D ** 2 * np.pi / 4 * Cd * np.abs(Vrel) * Vrel  # N
+        F_D = 1 / 2 * rhoL * D ** 2 * np.pi / 4 * Cd * UVTotRel * Vrel  # N
         F_g = -massBubble * g  # N
         F_P = massBubble * rhoL / rhoB * g  # N
         F_L = -Cl * rhoL * np.pi * D ** 3 / 6 * (-uBubble * dVdx)  # N Tomiyama
@@ -360,36 +362,40 @@ for t in times:
 
         # Calculate new bubble y-position at the new time-index ti+1:
         debuggYpos = bubbleYpos[ti, bubbleID] + bubbleVelYdir[ti + 1, bubbleID] * dt
-        bubbleYpos[ti + 1, bubbleID] = bubbleYpos[ti, bubbleID] + bubbleVelYdir[ti + 1, bubbleID] * dt
+        bubbleYpos[ti + 1, bubbleID] = bubbleYpos[ti, bubbleID] + bubbleVelYdir[ti, bubbleID] * dt
 
         # Domain-treatment
         # if bubble pos is above domain height L, remove from alive bubble list
         if bubbleYpos[ti + 1, bubbleID] > L:
             bubbleRemoveList.append(bubbleID)
             bubbleDeletionTimeIndex[bubbleID] = ti
+        # elif bubbleYpos[ti + 1, bubbleID] < -0.01:
+        #     bubbleRemoveList.append(bubbleID)
+        #     bubbleDeletionTimeIndex[bubbleID] = ti
 
         """X-direction (horizontal axis)"""
-
-        # Calculate relative velocity in x directions
-        Urel = -uBubble
-
         # Calculate the forces on the bubble along x-direction
-        F_D_X = 3 * np.pi * mul * D * Urel  # N Assume Re << 1
+        F_D_X = 1 / 2 * rhoL * D ** 2 * np.pi / 4 * Cd * UVTotRel * Urel  # N
         F_L_X = -Cl * rhoL * np.pi * D ** 3 / 6 * (-Vrel * dVdx)  # N Tomiyama
 
         # Store forces normalized with the bouyant force
         bubbleLiftNorm[ti, bubbleID] = F_L_X / F_P
 
-        FtotX = F_D_X + F_L_X  # total force on the bubble along x-direction
+        # Store time index when bubble is injected: used for computing the history force
+        # the history force Fhist is computed for you as:
+        if (t - injTime) > 0.0:
+            mhist = np.sqrt(rhoL * mul * np.pi) * massBubble / (rhoB * D)
+            Fhist = mhist * Urel / np.sqrt(0.5 * (t - injTime))
+        else:
+            Fhist = 0
+
+        FtotX = F_D_X + F_L_X + Fhist  # total force on the bubble along x-direction
 
         # Calculate bubble x-velocity at the new time-index ti+1: Forward Euler
-        # Assume no added mass
-        debuggXvel = bubbleVelXdir[ti, bubbleID] + dt * FtotX / totMass
         bubbleVelXdir[ti + 1, bubbleID] = bubbleVelXdir[ti, bubbleID] + dt * FtotX / totMass
 
         # Calculate new bubble x-position at the new time-index ti+1:
-        debuggXpos = bubbleXpos[ti, bubbleID] + bubbleVelXdir[ti + 1, bubbleID] * dt
-        bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID] + bubbleVelXdir[ti + 1, bubbleID] * dt
+        bubbleXpos[ti + 1, bubbleID] = bubbleXpos[ti, bubbleID] + bubbleVelXdir[ti, bubbleID] * dt
 
         # Wall-treatment
         # if bubble pos is at one radius distance from a wall and x-vel towards it, set x-vel to 0 and bubble pos to previous pos.

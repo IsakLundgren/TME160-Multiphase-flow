@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ---Task A---
+# TODO Increase plot text size
 
 # Particle properties
 d_p = 0.5 * 1e-3  # m
