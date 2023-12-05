@@ -178,7 +178,9 @@ L = 3.0  # domain length along y-dir (m)
 # Physical properties
 # Continous phase: Water @20 deg
 rhoL = 1000.0  # density of water (kg/m3)
+# rhoL = 867.0  # density of linseed oil (kg/m3)
 mul = 0.001  # dynamic viscosity of water (Pa.s)
+# mul = 0.00055  # dynamic viscosity of linseed oil (Pa.s)
 sig = 0.073  # surface tension
 
 # Dispersed phase: Air @20 deg
@@ -198,7 +200,8 @@ py = 1  # pressure gradient
 
 """
 # time settings
-dt = 0.01  # time step for the simulations (s) -- CHOOSE AN APPROPRIATE TIMESTEP
+tau_xp = rhoB * meanDia ** 2 / (18 * mul)
+dt = tau_xp  # tau_xp  # time step for the simulations (s) -- CHOOSE AN APPROPRIATE TIMESTEP
 tEnd = 30  # simulation end time (s) -- SPECIFIED IN THE PROBLEM
 
 # DON'T CHANGE THIS
@@ -553,7 +556,7 @@ for bubble in range(bubbleMaxID):
             twelfthLengthVrel.append(bubbleVrelYdir[itwelfthLength, bubble])
             twelfthLengthDiameter.append(bubbleDia[bubble])
 
-fig, axs = plt.subplots(1, 3, figsize=(12, 4), sharey=True)
+fig, axs = plt.subplots(1, 3, figsize=(12, 4), sharey='all')
 
 axs[0].scatter(twelfthLengthFL, twelfthLengthDiameter, c='r')
 axs[0].set_title('Normalized lift force (x-direction)')
